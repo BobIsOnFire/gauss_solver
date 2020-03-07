@@ -1,6 +1,4 @@
-package com.bobisonfire.gauss.parser;
-
-import com.bobisonfire.gauss.matrix.Rational;
+package com.bobisonfire.gauss.provider;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -11,13 +9,13 @@ public class EquationSystemProvider extends SystemProvider {
     private String[] variableNames;
 
     @Override
-    protected Rational[][] parseModel(Scanner scanner) {
+    protected double[][] parseModel(Scanner scanner) {
         variableNames = new String[size];
-        Rational[][] model = new Rational[size][size + 1];
+        double[][] model = new double[size][size + 1];
 
-        for (Rational[] row : model)
+        for (double[] row : model)
             for (int i = 0; i <= size; i++)
-                row[i] = Rational.ZERO;
+                row[i] = 0;
 
         try {
             int variablePointer = 0;
@@ -33,7 +31,7 @@ public class EquationSystemProvider extends SystemProvider {
                 StringBuilder numberBuilder = new StringBuilder();
                 StringBuilder variableBuilder = new StringBuilder();
 
-                List<Rational> numbers = new ArrayList<>();
+                List<Double> numbers = new ArrayList<>();
                 List<String> variables = new ArrayList<>();
 
                 String equation = scanner.nextLine().trim().replaceAll("\\s+", " ").concat("+");
@@ -129,7 +127,7 @@ public class EquationSystemProvider extends SystemProvider {
                         if (!hadNumberInBlock && !hadVariableInBlock) throw new ParseException(equation, charOffset);
 
                         if (!hadNumberInBlock) numberBuilder.append('1');
-                        numbers.add(Rational.parse( numberBuilder.toString() ));
+                        numbers.add(parseNumber( numberBuilder.toString() ));
                         variables.add(variableBuilder.toString());
                         if (ch == '=') equalSignOffset = numbers.size();
 
@@ -153,10 +151,9 @@ public class EquationSystemProvider extends SystemProvider {
 
                 for (int j = 0; j < numbers.size(); j++) {
                     String var = variables.get(j);
-                    Rational r = numbers.get(j);
+                    double r = numbers.get(j);
                     if (var.isEmpty()) {
-                        if (j < equalSignOffset) r = r.negate();
-                        model[i][size] = model[i][size].add(r);
+                        model[i][size] += j < equalSignOffset ? -r : r;
                         continue;
                     }
 
@@ -166,8 +163,7 @@ public class EquationSystemProvider extends SystemProvider {
                         variableNames[index] = var;
                     }
 
-                    if (j >= equalSignOffset) r = r.negate();
-                    model[i][index] = model[i][index].add(r);
+                    model[i][index] += j >= equalSignOffset ? -r : r;
                 }
             }
 
@@ -176,7 +172,7 @@ public class EquationSystemProvider extends SystemProvider {
             System.out.println("Expected size is not equal to the size of parsed matrix.");
             System.exit(0);
         } catch (NumberFormatException exc) {
-            System.out.println("Found non-rational value in equation. " + exc.getMessage());
+            System.out.println("Found non-double value in equation. " + exc.getMessage());
             System.exit(0);
         } catch (ParseException exc) {
             System.out.println("Cannot parse equation: " + exc.getMessage() + ", offset - " + exc.getErrorOffset());

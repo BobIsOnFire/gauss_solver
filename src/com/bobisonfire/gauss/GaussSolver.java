@@ -3,9 +3,10 @@ package com.bobisonfire.gauss;
 import com.bobisonfire.gauss.solution.Solution;
 import com.bobisonfire.gauss.solution.SolutionBuilder;
 import com.bobisonfire.gauss.matrix.Matrix;
-import com.bobisonfire.gauss.matrix.Rational;
 
 public class GaussSolver {
+    private final static double EPSILON_PRECISION = 1E-12;
+
     private final Matrix matrix;
     private Matrix triangleMatrix = null;
 
@@ -13,15 +14,11 @@ public class GaussSolver {
     private final int cols;
 
     private boolean negated = false;
-    private final boolean[] isZero;
 
     public GaussSolver(Matrix matrix) {
         this.matrix = matrix;
         this.rows = matrix.getModel().length;
         this.cols = matrix.getRow(0).length;
-
-        this.isZero = new boolean[cols - 1];
-        for (int i = 0; i < cols - 1; i++) isZero[i] = true;
     }
 
     public Matrix getTriangleMatrix() {
@@ -32,11 +29,11 @@ public class GaussSolver {
 
         for (int i = 0; i < steps; i++) {
             int j = i;
-            while (j < rows && t.get(j, i).equals(Rational.ZERO)) j++;
+            while (j < rows && t.get(j, i) == 0) j++;
             if (j == rows) {
                 j = i;
-                while (j < cols && t.get(i, j).equals(Rational.ZERO)) j++;
-                if (j >= cols - 1 || !t.get(j, j).equals(Rational.ZERO)) continue;
+                while (j < cols && t.get(i, j) == 0) j++;
+                if (j >= cols - 1 || !(t.get(j, j) == 0)) continue;
 
                 t = t.swapRows(i, j);
                 negated = !negated;
@@ -48,26 +45,24 @@ public class GaussSolver {
                 negated = !negated;
             }
 
-            isZero[i] = false;
             for (j = i + 1; j < rows; j++) {
-                if (t.get(j, i).equals(Rational.ZERO)) continue;
-                Rational mul = t.get(j, i).divide( t.get(i, i) ).negate();
+                if (t.get(j, i) == 0) continue;
+                double mul = - t.get(j, i) / t.get(i, i);
                 t = t.addRow(i, j, mul);
             }
         }
 
-        triangleMatrix = t;
+        triangleMatrix = castEpsilonsToZero(t);
         return triangleMatrix;
     }
 
-    public Rational getDeterminant() {
+    public double getDeterminant() {
         Matrix t = getTriangleMatrix();
-        Rational det = Rational.ONE;
-        if (negated) det = det.negate();
+        double det = negated ? 1 : -1;
 
         for (int i = 0; i < rows; i++) {
-            if ( t.get(i, i).equals(Rational.ZERO) ) return Rational.ZERO;
-            det = det.multiply( t.get(i, i) );
+            if ( t.get(i, i) == 0 ) return 0;
+            det *= t.get(i, i);
         }
         return det;
     }
@@ -77,49 +72,51 @@ public class GaussSolver {
         Matrix t = getTriangleMatrix();
 
         for (int i = rows - 1; i >= 0; i--) {
-            if (t.get(i, i).equals(Rational.ZERO)) continue;
+            if (t.get(i, i) == 0) continue;
 
-            t = t.multiplyRow( i, t.get(i, i).reverse() );
+            t = t.multiplyRow( i, 1 / t.get(i, i));
 
             for (int j = i - 1; j >= 0; j--) {
-                if ( t.get(j, i).equals(Rational.ZERO) ) continue;
-                Rational mul = t.get(j, i).negate();
+                if ( t.get(j, i) == 0 ) continue;
+                double mul = -t.get(j, i);
                 t = t.addRow(i, j, mul);
             }
         }
 
-        return t;
+        return castEpsilonsToZero(t);
     }
 
     public Solution getSolution(String[] variableNames) {
         Matrix t = getPartlyDiagonalMatrix();
 
-        Rational[] freeMembers = new Rational[cols - 1];
-        Rational[][] constants = new Rational[rows][cols - 1];
+        double[] freeMembers = new double[cols - 1];
+        double[][] constants = new double[rows][cols - 1];
+        boolean[] isZero = new boolean[cols - 1];
         boolean infiniteSolutions = false;
 
         for (int i = 0; i < cols - 1; i++) {
+            isZero[i] = t.get(i, i) == 0;
             if (!isZero[i]) {
                 freeMembers[i] = t.get(i, cols - 1);
                 continue;
             }
 
-            freeMembers[i] = Rational.ZERO;
+            freeMembers[i] = 0;
 
-            if ( i < rows && !t.get(i, cols - 1).equals(Rational.ZERO) )
+            if ( i < rows && !(t.get(i, cols - 1) == 0) )
                 return SolutionBuilder.instance().noSolutions(true).get();
 
             infiniteSolutions = true;
-            for (int j = 0; j < rows; j++) constants[j][i] = t.get(j, i).negate();
+            for (int j = 0; j < rows; j++) constants[j][i] = -t.get(j, i);
         }
 
-        Rational[] remainders = new Rational[rows];
+        double[] remainders = new double[rows];
         for (int i = 0; i < rows; i++) {
-            Rational sum = Rational.ZERO;
+            double sum = 0;
             for (int j = 0; j < cols - 1; j++) {
-                sum = sum.add( freeMembers[j].multiply(matrix.get(i, j)) );
+                sum += freeMembers[j] * matrix.get(i, j);
             }
-            remainders[i] = matrix.get(i, cols - 1).subtract(sum);
+            remainders[i] = matrix.get(i, cols - 1) - sum;
         }
 
         SolutionBuilder builder = SolutionBuilder.instance()
@@ -141,5 +138,15 @@ public class GaussSolver {
         String[] variableNames = new String[cols - 1];
         for (int i = 0; i < cols - 1; i++) variableNames[i] = "x" + (i + 1);
         return getSolution(variableNames);
+    }
+
+    private Matrix castEpsilonsToZero(Matrix m) {
+        for (double[] row : m.getModel()) {
+            for (int i = 0; i < cols; i++) {
+                if (Math.abs(row[i]) < EPSILON_PRECISION) row[i] = 0;
+            }
+        }
+
+        return m;
     }
 }

@@ -3,11 +3,11 @@ package com.bobisonfire.gauss.matrix;
 import java.util.StringJoiner;
 
 public class Matrix {
-    private Rational[][] model;
+    private double[][] model;
     private int rows;
     private int cols;
 
-    public static Matrix from(Rational[][] model) {
+    public static Matrix from(double[][] model) {
         if (model.length == 0 || model[0].length == 0) throw new MatrixException();
         Matrix m = new Matrix();
 
@@ -19,45 +19,44 @@ public class Matrix {
     }
 
     public static Matrix unary(int size) {
-        Rational[][] model = new Rational[size][size];
+        double[][] model = new double[size][size];
         for (int i = 0; i < size; i++) {
-            model[i][i] = Rational.ONE;
+            model[i][i] = 1d;
         }
 
         return from(model);
     }
 
-    private static Rational[][] cloneModel(Rational[][] model) {
+    private static double[][] cloneModel(double[][] model) {
         int rows = model.length;
         if (rows == 0) return model;
 
         int cols = model[0].length;
-        Rational[][] newModel = new Rational[rows][cols];
+        double[][] newModel = new double[rows][cols];
 
         for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                newModel[i][j] = Rational.from( model[i][j] );
+            System.arraycopy(model[i], 0, newModel[i], 0, cols);
 
         return newModel;
     }
 
 
 
-    public Rational[][] getModel() {
+    public double[][] getModel() {
         return model;
     }
 
-    public Rational[] getRow(int i) {
+    public double[] getRow(int i) {
         return model[i];
     }
 
-    public Rational[] getCol(int j) {
-        Rational[] col = new Rational[rows];
+    public double[] getCol(int j) {
+        double[] col = new double[rows];
         for (int i = 0; i < rows; i++) col[i] = model[i][j];
         return col;
     }
 
-    public Rational get(int i, int j) {
+    public double get(int i, int j) {
         return model[i][j];
     }
 
@@ -66,19 +65,19 @@ public class Matrix {
     public Matrix add(Matrix x) {
         if (rows != x.rows || cols != x.cols) throw new MatrixException();
 
-        Rational[][] newModel = new Rational[rows][cols];
+        double[][] newModel = new double[rows][cols];
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                newModel[i][j] = model[i][j].add( x.model[i][j] );
+                newModel[i][j] = model[i][j] + x.model[i][j];
 
         return from(newModel);
     }
 
-    public Matrix multiply(Rational x) {
-        Rational[][] newModel = new Rational[rows][cols];
+    public Matrix multiply(double x) {
+        double[][] newModel = new double[rows][cols];
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                newModel[i][j] = model[i][j].multiply(x);
+                newModel[i][j] = model[i][j] * x;
 
         return from(newModel);
     }
@@ -86,22 +85,22 @@ public class Matrix {
     public Matrix multiply(Matrix x) {
         if (cols != x.rows) throw new MatrixException();
 
-        Rational[][] newModel = new Rational[rows][x.cols];
+        double[][] newModel = new double[rows][x.cols];
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < x.cols; j++)
                 for (int k = 0; k < cols; k++)
-                    newModel[i][j] = newModel[i][j].add( model[i][k].multiply( x.model[k][j] ) );
+                    newModel[i][j] = newModel[i][j] + model[i][k] * x.model[k][j];
 
         return from(newModel);
     }
 
     public Matrix swapRows(int i1, int i2) {
-        Rational[][] newModel = cloneModel(model);
+        double[][] newModel = cloneModel(model);
         if (i1 == i2) return from(newModel);
 
         for (int j = 0; j < cols; j++) {
-            Rational r = newModel[i1][j];
+            double r = newModel[i1][j];
             newModel[i1][j] = newModel[i2][j];
             newModel[i2][j] = r;
         }
@@ -110,11 +109,11 @@ public class Matrix {
     }
 
     public Matrix swapCols(int j1, int j2) {
-        Rational[][] newModel = cloneModel(model);
+        double[][] newModel = cloneModel(model);
         if (j1 == j2) return from(newModel);
 
         for (int i = 0; i < rows; i++) {
-            Rational r = newModel[i][j1];
+            double r = newModel[i][j1];
             newModel[i][j1] = newModel[i][j2];
             newModel[i][j2] = r;
         }
@@ -122,46 +121,46 @@ public class Matrix {
         return from(newModel);
     }
 
-    public Matrix multiplyRow(int i, Rational r) {
-        Rational[][] newModel = cloneModel(model);
-        if (r.equals(Rational.ZERO)) throw new MatrixException();
-        if (r.equals(Rational.ONE)) return from(newModel);
+    public Matrix multiplyRow(int i, double r) {
+        double[][] newModel = cloneModel(model);
+        if (r == 0) throw new MatrixException();
+        if (r == 1) return from(newModel);
 
         for (int j = 0; j < cols; j++)
-            newModel[i][j] = newModel[i][j].multiply(r);
+            newModel[i][j] = newModel[i][j] * r;
 
         return from(newModel);
     }
 
-    public Matrix multiplyCol(int j, Rational r) {
-        Rational[][] newModel = cloneModel(model);
-        if (r.equals(Rational.ZERO)) throw new MatrixException();
-        if (r.equals(Rational.ONE)) return from(newModel);
+    public Matrix multiplyCol(int j, double r) {
+        double[][] newModel = cloneModel(model);
+        if (r == 0) throw new MatrixException();
+        if (r == 1) return from(newModel);
 
         for (int i = 0; i < rows; i++) {
-            newModel[i][j] = newModel[i][j].multiply(r);
+            newModel[i][j] = newModel[i][j] * r;
         }
 
         return from(newModel);
     }
 
-    public Matrix addRow(int from, int to, Rational k) {
-        Rational[][] newModel = cloneModel(model);
-        if (k.equals(Rational.ZERO)) return from(newModel);
+    public Matrix addRow(int from, int to, double k) {
+        double[][] newModel = cloneModel(model);
+        if (k == 0) return from(newModel);
 
         for (int j = 0; j < cols; j++) {
-            newModel[to][j] = newModel[to][j].add( newModel[from][j].multiply(k) );
+            newModel[to][j] = newModel[to][j] + newModel[from][j] * k;
         }
 
         return from(newModel);
     }
 
-    public Matrix addCol(int from, int to, Rational k) {
-        Rational[][] newModel = cloneModel(model);
-        if (k.equals(Rational.ZERO)) return from(newModel);
+    public Matrix addCol(int from, int to, double k) {
+        double[][] newModel = cloneModel(model);
+        if (k == 0) return from(newModel);
 
         for (int i = 0; i < cols; i++) {
-            newModel[i][to] = newModel[i][to].add( newModel[i][from].multiply(k) );
+            newModel[i][to] = newModel[i][to] + newModel[i][from] * k;
         }
 
         return from(newModel);
@@ -171,9 +170,9 @@ public class Matrix {
     public String toString() {
         StringJoiner lineJoiner = new StringJoiner("\n");
 
-        for (Rational[] row : model) {
+        for (double[] row : model) {
             StringJoiner elementJoiner = new StringJoiner("\t");
-            for (Rational el : row) elementJoiner.add(el.toString());
+            for (double el : row) elementJoiner.add(Double.toString(el));
             lineJoiner.add(elementJoiner.toString());
         }
 
@@ -189,7 +188,7 @@ public class Matrix {
 
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                if ( !get(i, j).equals(m.get(i, j)) ) return false;
+                if ( !( get(i, j) == m.get(i, j) ) ) return false;
 
         return true;
     }

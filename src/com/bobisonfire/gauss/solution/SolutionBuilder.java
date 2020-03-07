@@ -1,7 +1,5 @@
 package com.bobisonfire.gauss.solution;
 
-import com.bobisonfire.gauss.matrix.Rational;
-
 public class SolutionBuilder {
     private Solution solution;
 
@@ -21,7 +19,7 @@ public class SolutionBuilder {
         return this;
     }
 
-    public SolutionBuilder freeMembers(Rational[] freeMembers) {
+    public SolutionBuilder freeMembers(double[] freeMembers) {
         solution.setFreeMembers(freeMembers);
         return this;
     }
@@ -31,12 +29,12 @@ public class SolutionBuilder {
         return this;
     }
 
-    public SolutionBuilder constants(Rational[][] constants) {
+    public SolutionBuilder constants(double[][] constants) {
         solution.setConstants(constants);
         return this;
     }
 
-    public SolutionBuilder remainders(Rational[] remainders) {
+    public SolutionBuilder remainders(double[] remainders) {
         solution.setRemainders(remainders);
         return this;
     }

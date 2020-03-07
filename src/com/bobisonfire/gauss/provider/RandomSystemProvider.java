@@ -1,6 +1,4 @@
-package com.bobisonfire.gauss.parser;
-
-import com.bobisonfire.gauss.matrix.Rational;
+package com.bobisonfire.gauss.provider;
 
 import java.util.Random;
 import java.util.Scanner;
@@ -8,16 +6,16 @@ import java.util.Scanner;
 public class RandomSystemProvider extends SystemProvider {
 
     @Override
-    protected Rational[][] parseModel(Scanner scanner) {
-        Rational[][] model = new Rational[size][size + 1];
+    protected double[][] parseModel(Scanner scanner) {
+        double[][] model = new double[size][size + 1];
         Random r = new Random(System.currentTimeMillis());
         r.nextInt();
         r.nextInt();
         r.nextInt();
 
-        for (Rational[] row : model) {
+        for (double[] row : model) {
             for (int i = 0; i < size + 1; i++) {
-                row[i] = Rational.from(r.nextInt(100), r.nextInt(100));
+                row[i] = (r.nextInt(201) - 100) * 1.0 / (r.nextInt(100) + 1);
             }
         }
 

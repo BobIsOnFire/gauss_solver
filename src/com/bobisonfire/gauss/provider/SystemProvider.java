@@ -1,8 +1,7 @@
-package com.bobisonfire.gauss.parser;
+package com.bobisonfire.gauss.provider;
 
 import com.bobisonfire.gauss.GaussSolver;
 import com.bobisonfire.gauss.matrix.Matrix;
-import com.bobisonfire.gauss.matrix.Rational;
 import com.bobisonfire.gauss.solution.Solution;
 
 import java.io.InputStream;
@@ -11,10 +10,10 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 public abstract class SystemProvider {
-    private Rational[][] model;
+    private double[][] model;
     protected int size;
 
-    protected abstract Rational[][] parseModel(Scanner scanner);
+    protected abstract double[][] parseModel(Scanner scanner);
     protected abstract String[] getVariableNames();
 
     public void readAndParse(InputStream in) {
@@ -45,11 +44,23 @@ public abstract class SystemProvider {
         out.println("Triangle matrix:\n" + solver.getTriangleMatrix() + "\n");
 
         Solution solution = solver.getSolution( getVariableNames() );
-        out.println("Solution:\n" + solution);
+        out.println(solution);
 
-        if (solution.hasSolutions()) {
-            out.println("Variables: " + Arrays.toString(solution.getVariableNames()));
-            out.println("Remainders: " + Arrays.toString(solution.getRemainders()));
+        if (solution.hasSolutions()) out.println("Remainders: " + Arrays.toString(solution.getRemainders()));
+    }
+
+    protected final double parseNumber(String s) {
+        if (s.isEmpty()) throw new NumberFormatException("empty String");
+
+        if (s.matches("-?\\d+")) return Integer.parseInt(s);
+
+        if (s.matches("-?\\d+/-?\\d+")) {
+            String[] parts = s.split("/");
+            return Integer.parseInt(parts[0]) * 1.0 / Integer.parseInt(parts[1]);
         }
+
+        if (s.matches("-?\\d*\\.\\d*")) return Double.parseDouble(s);
+
+        throw new NumberFormatException("For input string: \"" + s + "\"");
     }
 }

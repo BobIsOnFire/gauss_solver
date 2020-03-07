@@ -1,15 +1,13 @@
 package com.bobisonfire.gauss.solution;
 
-import com.bobisonfire.gauss.matrix.Rational;
-
 public class Solution {
     private boolean infiniteSolutions;
     private boolean noSolutions;
 
     private boolean[] isAny;
-    private Rational[] freeMembers;
-    private Rational[][] constants;
-    private Rational[] remainders;
+    private double[] freeMembers;
+    private double[][] constants;
+    private double[] remainders;
 
     private String[] variableNames;
 
@@ -25,15 +23,15 @@ public class Solution {
         return isAny;
     }
 
-    public Rational[] getFreeMembers() {
+    public double[] getFreeMembers() {
         return freeMembers;
     }
 
-    public Rational[][] getConstants() {
+    public double[][] getConstants() {
         return constants;
     }
 
-    public Rational[] getRemainders() {
+    public double[] getRemainders() {
         return remainders;
     }
 
@@ -53,15 +51,15 @@ public class Solution {
         this.isAny = isAny;
     }
 
-    void setFreeMembers(Rational[] freeMembers) {
+    void setFreeMembers(double[] freeMembers) {
         this.freeMembers = freeMembers;
     }
 
-    void setConstants(Rational[][] constants) {
+    void setConstants(double[][] constants) {
         this.constants = constants;
     }
 
-    void setRemainders(Rational[] remainders) {
+    void setRemainders(double[] remainders) {
         this.remainders = remainders;
     }
 
@@ -71,36 +69,41 @@ public class Solution {
 
     @Override
     public String toString() {
-        if (noSolutions) return "No solutions";
+        if (noSolutions) return "No solutions.";
 
-        StringBuilder sb = new StringBuilder();
+        if (!infiniteSolutions) {
+            StringBuilder sb = new StringBuilder("One solution:\n");
+            for (int i = 0; i < freeMembers.length; i++)
+                sb.append( String.format("%s = %s", variableNames[i], freeMembers[i]) ).append('\n');
+            return sb.toString();
+        }
 
+        int k = 0;
+        String[] constantNames = new String[freeMembers.length];
         for (int i = 0; i < freeMembers.length; i++) {
-            String s = String.format("%s = %s", variableNames[i], freeMembers[i]);
+            if (isAny[i]) constantNames[i] = "c" + ++k;
+        }
 
-            if (!infiniteSolutions) {
-                sb.append(s).append('\n');
-                continue;
-            }
-
+        StringBuilder sb = new StringBuilder("Infinite solutions:\n");
+        for (int i = 0; i < freeMembers.length; i++) {
             if (isAny[i]) {
-                sb.append( String.format("%s = %s", variableNames[i], variableNames[i]) ).append('\n');
+                sb.append( String.format("%s = %s", variableNames[i], constantNames[i]) ).append('\n');
                 continue;
             }
 
-            sb.append(s);
+            sb.append( String.format("%s = %s", variableNames[i], freeMembers[i]) );
             for (int j = 0; j < isAny.length; j++) {
                 if (!isAny[j]) continue;
 
-                Rational r = constants[i][j];
-                if (r.equals(Rational.ZERO)) continue;
+                double r = constants[i][j];
+                if (r == 0) continue;
 
-                if (r.absolute().equals(Rational.ONE)) {
-                    sb.append( String.format(" %s %s", r.sign() == 1 ? "+" : "-", variableNames[j]) );
+                if (r == 1 || r == -1) {
+                    sb.append( String.format(" %s %s", r == 1 ? "+" : "-", constantNames[j]) );
                     continue;
                 }
 
-                sb.append( String.format(" %s %s %s", r.sign() == 1 ? "+" : "-", r.absolute().toString(), variableNames[j]) );
+                sb.append( String.format(" %s %s %s", r > 0 ? "+" : "-", Math.abs(r), constantNames[j]) );
             }
             sb.append('\n');
         }
